@@ -3,10 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的麻将助手</title>
+    <title>麻雀計算</title>
+    <link rel="stylesheet" href="mjStyle.css">
 </head>
 <body>
-    <h1>👋 你好，麻将朋友们！</h1>
-    <p>我的麻将识别工具正在建设中，敬请期待。</p>
+    <h1 class="center">麻雀計算</h1>
+
+    <!-- Mahjong version selector -->
+    <div class="version-selector">
+        <label>
+            <input type="checkbox" checked disabled> 日麻
+        </label>
+        <!-- can add more later -->
+    </div>
+
+    <!-- Photo capture / upload -->
+    <div class="camera-section">
+        <button id="captureBtn">📸 拍照</button>
+        <input type="file" id="uploadInput" accept="image/*" style="display:none;">
+        <div id="imagePreview"></div>
+    </div>
+
+    <!-- Tiles display and adjustment -->
+    <div id="tilesContainer">
+        <!-- This will be populated after recognition or manual input -->
+    </div>
+
+    <!-- Game state checkboxes and dropdowns -->
+    <div class="game-state">
+        <label><input type="checkbox" id="tsumo"> 自摸</label>
+        <label><input type="checkbox" id="dealer"> 莊家</label>
+        <label><input type="checkbox" id="riichi"> 立直</label>
+    </div>
+
+    <div class="wind-selectors">
+        <label>圈風:
+            <select id="roundWind">
+                <option value="東">東</option>
+                <option value="南">南</option>
+                <option value="西">西</option>
+                <option value="北">北</option>
+            </select>
+        </label>
+        <label>門風:
+            <select id="playerWind">
+                <option value="東">東</option>
+                <option value="南">南</option>
+                <option value="西">西</option>
+                <option value="北">北</option>
+            </select>
+        </label>
+    </div>
+
+    <div class="dora-selectors">
+        <label>紅寶牌:
+            <input type="number" id="akaDora" min="0" max="3" value="0">
+        </label>
+        <label>寶牌:
+            <!-- we'll need a way to select multiple dora indicators -->
+            <div id="doraIndicators"></div>
+        </label>
+        <label>花:
+            <input type="number" id="flowers" min="0" max="4" value="0">
+        </label>
+    </div>
+
+    <!-- Calculate button -->
+    <div class="center">
+        <button id="calculateBtn">計算</button>
+    </div>
+
+    <!-- Result display -->
+    <div id="result"></div>
+
+    <script src="mjScript.js"></script>
 </body>
 </html>

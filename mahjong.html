@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>麻雀計算</title>
-    <!-- <link rel="stylesheet" href="mjStyle.css"> -->
+    <link rel="stylesheet" href="mjStyle.css">
 </head>
 <body>
+    <script src="mjTiles.js"></script>
+    <script src="mjScript.js"></script>
     <h1 class="center">麻雀計算</h1>
 
     <!-- Mahjong version selector -->
@@ -34,6 +36,7 @@
         <label><input type="checkbox" id="tsumo"> 自摸</label>
         <label><input type="checkbox" id="dealer"> 莊家</label>
         <label><input type="checkbox" id="riichi"> 立直</label>
+        <label><input type="checkbox" id="ippatsu"> 一發</label>
     </div>
 
     <div class="wind-selectors">
@@ -76,6 +79,5 @@
     <!-- Result display -->
     <div id="result"></div>
 
-    <!-- <script src="mjScript.js"></script> -->
 </body>
 </html>

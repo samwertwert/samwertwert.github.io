@@ -809,7 +809,7 @@ let classifier = null;
 
 async function loadModel() {
     if (classifier) return classifier;
-    const { pipeline } = window.Transformers;
+    const { pipeline } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.6.0');
     // The model is a ViT fine‑tuned on mahjong tiles
     classifier = await pipeline('image-classification', 'pjura/mahjong_vision');
     console.log('Mahjong vision model loaded');

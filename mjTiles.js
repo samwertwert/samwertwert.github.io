@@ -15,6 +15,16 @@ function tileEqual(t1, t2) {
 }
 
 /**
+ * Check if three tiles form a sequence (same suit, consecutive numbers)
+ */
+function isSequence(t1, t2, t3) {
+    if (t1.suit !== t2.suit || t2.suit !== t3.suit) return false;
+    // Sort by number
+    const nums = [t1.number, t2.number, t3.number].sort((a,b) => a-b);
+    return nums[1] === nums[0] + 1 && nums[2] === nums[1] + 1;
+}
+
+/**
  * Check if tile is terminal (1 or 9) or honor
  * @param {Object} t - Tile object
  * @returns {boolean}

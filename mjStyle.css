@@ -1,0 +1,43 @@
+.group-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 10px 0;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background: #f9f9f9;
+}
+.tile-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+.tile-group .tiles {
+    font-size: 1.5em;
+    letter-spacing: 2px;
+}
+.group-controls {
+    display: flex;
+    gap: 5px;
+    margin-left: 10px;
+}
+.group-controls button {
+    width: 30px;
+    height: 30px;
+    font-size: 1.2em;
+    cursor: pointer;
+}
+.winning-tile-selector {
+    margin-top: 10px;
+    font-weight: bold;
+}
+.winning-tile-selector select {
+    margin-left: 10px;
+    padding: 5px;
+}
+

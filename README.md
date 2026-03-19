@@ -1,3 +1,3 @@
 # samwertwert.github.io
 
-www.samwertwert.github.io/mahjong
+samwertwert.github.io/mahjong

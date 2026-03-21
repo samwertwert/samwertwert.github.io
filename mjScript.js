@@ -220,7 +220,7 @@ function detectYaku(params) {
         const seqMap = new Map();
         sequences.forEach(seq => {
             const first = seq.tiles[0];
-            const key = `${first.suit}:${first.number}-${first.number+1}-${first.number+2}`;
+            const key = `${first.suit}:${first.number}-${first.number + 1}-${first.number + 2}`;
             seqMap.set(key, (seqMap.get(key) || 0) + 1);
         });
         const doubleSeqCount = Array.from(seqMap.values()).filter(c => c >= 2).length;
@@ -259,7 +259,7 @@ function detectYaku(params) {
 
     // 8. Junchan (pure outside)
     let junchanOk = groups.every(g => g.tiles.some(t => !isHonor(t) && (t.number === 1 || t.number === 9)))
-                    && !groups.some(g => g.tiles.some(t => isHonor(t)));
+        && !groups.some(g => g.tiles.some(t => isHonor(t)));
     if (junchanOk) {
         addYaku('純全帯么九', isMenzen ? 3 : 2);
     }
@@ -271,7 +271,7 @@ function detectYaku(params) {
     }
 
     // 10. Shousangen (little three dragons)
-    const dragonCount = { white:0, green:0, red:0 };
+    const dragonCount = { white: 0, green: 0, red: 0 };
     groups.forEach(g => {
         if (g.type === 'triplet' || g.type === 'kan' || g.type === 'pair') {
             const t = g.tiles[0];
@@ -371,11 +371,11 @@ function detectYaku(params) {
         const suit = Array.from(suitsPresent)[0];
         const numbers = [];
         groups.forEach(g => g.tiles.forEach(t => numbers.push(t.number)));
-        numbers.sort((a,b) => a-b);
+        numbers.sort((a, b) => a - b);
         const counts = {};
         numbers.forEach(n => counts[n] = (counts[n] || 0) + 1);
         let hasAllNumbers = true;
-        for (let i=1; i<=9; i++) if (!counts[i]) hasAllNumbers = false;
+        for (let i = 1; i <= 9; i++) if (!counts[i]) hasAllNumbers = false;
         if (hasAllNumbers && counts[1] >= 3 && counts[9] >= 3) {
             addYaku('九蓮宝燈', 0, true);
         }
@@ -383,11 +383,11 @@ function detectYaku(params) {
 
     // 24. Kokushi Musou (thirteen orphans)
     const requiredTiles = [
-        {suit:'m',number:1}, {suit:'m',number:9},
-        {suit:'p',number:1}, {suit:'p',number:9},
-        {suit:'s',number:1}, {suit:'s',number:9},
-        {suit:'z',number:1}, {suit:'z',number:2}, {suit:'z',number:3}, {suit:'z',number:4},
-        {suit:'z',number:5}, {suit:'z',number:6}, {suit:'z',number:7}
+        { suit: 'm', number: 1 }, { suit: 'm', number: 9 },
+        { suit: 'p', number: 1 }, { suit: 'p', number: 9 },
+        { suit: 's', number: 1 }, { suit: 's', number: 9 },
+        { suit: 'z', number: 1 }, { suit: 'z', number: 2 }, { suit: 'z', number: 3 }, { suit: 'z', number: 4 },
+        { suit: 'z', number: 5 }, { suit: 'z', number: 6 }, { suit: 'z', number: 7 }
     ];
 
     let kokushiOk = true;
@@ -480,10 +480,10 @@ function calculateScore(params) {
     if (yakuResult.yakuman === 0) {
         fu = calculateFu({ groups, winTile, winType, isDealer, roundWind, playerWind, waitType });
     }
-    
+
     // Override fu for pinfu (must be 20)
     if (yakuResult.yakuList.some(y => y.name === '平和')) {
-    fu = 20;
+        fu = 20;
     }
 
     // Determine limit and basic points
@@ -491,39 +491,39 @@ function calculateScore(params) {
     let basicPoints = 0; // "符 * 2^(2+han)" capped at 2000
 
     if (yakuResult.yakuman > 0) {
-    // Yakuman: each yakuman counts as a limit hand (base points 8000 for non‑dealer, 12000 for dealer)
-    const yakumanBase = isDealer ? 12000 : 8000;
-    basicPoints = yakumanBase * yakuResult.yakuman;
-    limit = yakuResult.yakuman > 1 ? `${yakuResult.yakuman}倍役満` : '役満';
-} else {
-    const han = yakuResult.han;
-    if (han >= 13) {
-        limit = '数え役満';
-        basicPoints = 8000;
-    } else if (han >= 11) {
-        limit = '三倍満';
-        basicPoints = 6000;
-    } else if (han >= 8) {
-        limit = '倍満';
-        basicPoints = 4000;
-    } else if (han >= 6) {
-        limit = '跳満';
-        basicPoints = 3000;
-    } else if (han >= 5) {
-        limit = '満貫';
-        basicPoints = 2000;
+        // Yakuman: each yakuman counts as a limit hand (base points 8000 for non‑dealer, 12000 for dealer)
+        const yakumanBase = isDealer ? 12000 : 8000;
+        basicPoints = yakumanBase * yakuResult.yakuman;
+        limit = yakuResult.yakuman > 1 ? `${yakuResult.yakuman}倍役満` : '役満';
     } else {
-        // Regular calculation
-        let multiplier = Math.pow(2, 2 + han);
-        basicPoints = fu * multiplier;
-        if (basicPoints > 2000) {
-            basicPoints = 2000;
+        const han = yakuResult.han;
+        if (han >= 13) {
+            limit = '数え役満';
+            basicPoints = 8000;
+        } else if (han >= 11) {
+            limit = '三倍満';
+            basicPoints = 6000;
+        } else if (han >= 8) {
+            limit = '倍満';
+            basicPoints = 4000;
+        } else if (han >= 6) {
+            limit = '跳満';
+            basicPoints = 3000;
+        } else if (han >= 5) {
             limit = '満貫';
+            basicPoints = 2000;
         } else {
-            limit = '';
+            // Regular calculation
+            let multiplier = Math.pow(2, 2 + han);
+            basicPoints = fu * multiplier;
+            if (basicPoints > 2000) {
+                basicPoints = 2000;
+                limit = '満貫';
+            } else {
+                limit = '';
+            }
         }
     }
-}
 
     // Calculate payments
     let payment = {};
@@ -587,7 +587,7 @@ document.addEventListener('DOMContentLoaded', () => {
             imagePreview.innerHTML = `<img src="${e.target.result}" style="max-width: 100%; max-height: 200px;">`;
         };
         reader.readAsDataURL(file);
- 
+
         // Attempt real recognition
         try {
             const groups = await realRecognition(file);
@@ -608,55 +608,55 @@ document.addEventListener('DOMContentLoaded', () => {
         // Return a sample hand: 223344m 567p 88s 东东 (pair)
         // This is a hand with sequences, a triplet, and a pair.
         return [
-            { tiles: [{suit:'m',number:2}, {suit:'m',number:2}, {suit:'m',number:3}], type: 'triplet', open: false }, // but this is not a triplet; we'll fix to proper groups
+            { tiles: [{ suit: 'm', number: 2 }, { suit: 'm', number: 2 }, { suit: 'm', number: 3 }], type: 'triplet', open: false }, // but this is not a triplet; we'll fix to proper groups
             // Better to create a valid hand: e.g., 234m 456m 33m 678p 99s? Let's create a simple valid hand:
             // 123m (sequence), 456m (sequence), 789m (sequence), 11p (pair) – that's a hand
-            { tiles: [{suit:'m',number:1}, {suit:'m',number:2}, {suit:'m',number:3}], type: 'sequence', open: false },
-            { tiles: [{suit:'m',number:4}, {suit:'m',number:5}, {suit:'m',number:6}], type: 'sequence', open: false },
-            { tiles: [{suit:'m',number:7}, {suit:'m',number:8}, {suit:'m',number:9}], type: 'sequence', open: false },
-            { tiles: [{suit:'p',number:1}, {suit:'p',number:1}], type: 'pair', open: false }
+            { tiles: [{ suit: 'm', number: 1 }, { suit: 'm', number: 2 }, { suit: 'm', number: 3 }], type: 'sequence', open: false },
+            { tiles: [{ suit: 'm', number: 4 }, { suit: 'm', number: 5 }, { suit: 'm', number: 6 }], type: 'sequence', open: false },
+            { tiles: [{ suit: 'm', number: 7 }, { suit: 'm', number: 8 }, { suit: 'm', number: 9 }], type: 'sequence', open: false },
+            { tiles: [{ suit: 'p', number: 1 }, { suit: 'p', number: 1 }], type: 'pair', open: false }
         ];
     }
 
     async function realRecognition(file) {
-    // Load image
-    const img = await createImageFromFile(file);
-    // Ensure image is loaded and dimensions known
-    await new Promise(resolve => { if (img.complete) resolve(); else img.onload = resolve; });
+        // Load image
+        const img = await createImageFromFile(file);
+        // Ensure image is loaded and dimensions known
+        await new Promise(resolve => { if (img.complete) resolve(); else img.onload = resolve; });
 
-    const boxes = detectTileBoxes(img);
-    if (boxes.length === 0) throw new Error('No tiles detected');
+        const boxes = detectTileBoxes(img);
+        if (boxes.length === 0) throw new Error('No tiles detected');
 
-    const tileLabels = [];
-    for (const box of boxes) {
-        const label = await classifyTileRegion(img, box);
-        // label format: e.g., "m1", "p5", "z6" (z=honor: 1-4 winds, 5-7 dragons)
-        const suit = label[0];
-        const number = parseInt(label.slice(1));
-        tileLabels.push({ suit, number });
+        const tileLabels = [];
+        for (const box of boxes) {
+            const label = await classifyTileRegion(img, box);
+            // label format: e.g., "m1", "p5", "z6" (z=honor: 1-4 winds, 5-7 dragons)
+            const suit = label[0];
+            const number = parseInt(label.slice(1));
+            tileLabels.push({ suit, number });
+        }
+
+        if (tileLabels.length !== 14) {
+            console.warn(`Detected ${tileLabels.length} tiles, expected 14. Using anyway.`);
+        }
+
+        // Group tiles
+        const groups = groupTiles(tileLabels);
+        if (!groups) {
+            throw new Error('Could not form a valid hand from recognized tiles');
+        }
+
+        return groups;
     }
 
-    if (tileLabels.length !== 14) {
-        console.warn(`Detected ${tileLabels.length} tiles, expected 14. Using anyway.`);
+    function createImageFromFile(file) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = URL.createObjectURL(file);
+        });
     }
-
-    // Group tiles
-    const groups = groupTiles(tileLabels);
-    if (!groups) {
-        throw new Error('Could not form a valid hand from recognized tiles');
-    }
-
-    return groups;
-}
-
-function createImageFromFile(file) {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = URL.createObjectURL(file);
-    });
-}
 
     // Render groups with adjustment controls
     function renderGroups(groups) {
@@ -684,8 +684,8 @@ function createImageFromFile(file) {
             // Status controls
             const statuses = ['順子', '刻子', '槓子', '雀頭'];
             const currentStatus = group.type === 'sequence' ? '順子' :
-                                  group.type === 'triplet' ? '刻子' :
-                                  group.type === 'kan' ? '槓子' : '雀頭';
+                group.type === 'triplet' ? '刻子' :
+                    group.type === 'kan' ? '槓子' : '雀頭';
 
             const statusSpan = document.createElement('span');
             statusSpan.textContent = currentStatus;
@@ -740,63 +740,65 @@ function createImageFromFile(file) {
 
         tilesContainer.appendChild(selectorDiv);
     }
-});
 
-// =============================================================================
-// Calculate button handler
-// =============================================================================
-document.getElementById('calculateBtn').addEventListener('click', () => {
-    // Gather groups from the UI (you need to store them in a variable)
-    // For now, we'll assume groups are stored in a global variable `currentGroups`
-    // and the winning tile index is from the dropdown.
-    if (!window.currentGroups) {
-        alert('請先拍照或輸入牌組');
-        return;
-    }
+    // =============================================================================
+    // Calculate button handler
+    // =============================================================================
+    document.getElementById('calculateBtn').addEventListener('click', () => {
+        // Gather groups from the UI (you need to store them in a variable)
+        // For now, we'll assume groups are stored in a global variable `currentGroups`
+        // and the winning tile index is from the dropdown.
+        if (!window.currentGroups) {
+            alert('請先拍照或輸入牌組');
+            return;
+        }
 
-    const winTileSelect = document.getElementById('winTileSelect');
-    if (!winTileSelect) {
-        alert('請選擇和了牌');
-        return;
-    }
+        const winTileSelect = document.getElementById('winTileSelect');
+        if (!winTileSelect) {
+            alert('請選擇和了牌');
+            return;
+        }
 
-    const winTileIndex = parseInt(winTileSelect.value);
-    // Flatten tiles to find the winning tile object
-    const allTiles = window.currentGroups.flatMap(g => g.tiles);
-    const winTile = allTiles[winTileIndex];
+        const winTileIndex = parseInt(winTileSelect.value);
+        // Flatten tiles to find the winning tile object
+        const allTiles = window.currentGroups.flatMap(g => g.tiles);
+        const winTile = allTiles[winTileIndex];
 
-    // Gather other UI parameters
-    const params = {
-        groups: window.currentGroups,
-        winTile: winTile,
-        winType: document.getElementById('tsumo').checked ? 'tsumo' : 'ron',
-        isDealer: document.getElementById('dealer').checked,
-        roundWind: document.getElementById('roundWind').value,
-        playerWind: document.getElementById('playerWind').value,
-        riichi: document.getElementById('riichi').checked,
-        ippatsu: document.getElementById('ippatsu').checked,
-        chankan: false,  // not implemented yet
-        rinshan: false,
-        haitei: false,
-        houtei: false,
-        doraIndicators: [],  // need to implement dora selection
-        uraDoraIndicators: [],
-        redFives: parseInt(document.getElementById('akaDora').value) || 0,
-        flowers: parseInt(document.getElementById('flowers').value) || 0
-    };
+        // Gather other UI parameters
+        const params = {
+            groups: window.currentGroups,
+            winTile: winTile,
+            winType: document.getElementById('tsumo').checked ? 'tsumo' : 'ron',
+            isDealer: document.getElementById('dealer').checked,
+            roundWind: document.getElementById('roundWind').value,
+            playerWind: document.getElementById('playerWind').value,
+            riichi: document.getElementById('riichi').checked,
+            ippatsu: document.getElementById('ippatsu').checked,
+            chankan: false,  // not implemented yet
+            rinshan: false,
+            haitei: false,
+            houtei: false,
+            doraIndicators: [],  // need to implement dora selection
+            uraDoraIndicators: [],
+            redFives: parseInt(document.getElementById('akaDora').value) || 0,
+            flowers: parseInt(document.getElementById('flowers').value) || 0
+        };
 
-    const result = calculateScore(params);
+        const result = calculateScore(params);
 
-    // Display result
-    const resultDiv = document.getElementById('result');
-    resultDiv.innerHTML = `
+        // Display result
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerHTML = `
         <h3>結果</h3>
         <p>翻: ${result.han} 符: ${result.fu} 役滿: ${result.yakuman}</p>
         <p>役: ${result.yakuList.map(y => y.name).join('、')}</p>
         <p>${result.limit} 基本點: ${result.basicPoints}</p>
         <pre>${JSON.stringify(result.payment, null, 2)}</pre>
     `;
+    });
 });
+
+
 
 // Store groups globally after recognition
 window.currentGroups = null;
@@ -837,7 +839,7 @@ function detectTileBoxes(imageElement) {
     const gray = new Uint8ClampedArray(canvas.width * canvas.height);
     for (let i = 0; i < data.length; i += 4) {
         // luminance
-        gray[i/4] = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+        gray[i / 4] = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
     }
 
     // Simple threshold (adjust if needed)
@@ -868,7 +870,7 @@ function detectTileBoxes(imageElement) {
                     maxY = Math.max(maxY, cy);
 
                     // Check 4 neighbors
-                    for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+                    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
                         const nx = cx + dx;
                         const ny = cy + dy;
                         if (nx >= 0 && nx < canvas.width && ny >= 0 && ny < canvas.height) {
@@ -940,7 +942,7 @@ function findGroups(tiles, currentGroups = []) {
     // 1. Try to form a kan (4 identical tiles)
     for (let i = 0; i < tiles.length; i++) {
         // Skip if we already processed this tile value (to avoid redundant attempts)
-        if (i > 0 && tileEqual(tiles[i], tiles[i-1])) continue;
+        if (i > 0 && tileEqual(tiles[i], tiles[i - 1])) continue;
         const key = `${tiles[i].suit}${tiles[i].number}`;
         if (countMap.get(key) >= 4) {
             // Select the first four occurrences of this tile
@@ -955,7 +957,7 @@ function findGroups(tiles, currentGroups = []) {
 
     // 2. Try to form a triplet (3 identical tiles)
     for (let i = 0; i < tiles.length; i++) {
-        if (i > 0 && tileEqual(tiles[i], tiles[i-1])) continue;
+        if (i > 0 && tileEqual(tiles[i], tiles[i - 1])) continue;
         const key = `${tiles[i].suit}${tiles[i].number}`;
         if (countMap.get(key) >= 3) {
             // Select the first three occurrences

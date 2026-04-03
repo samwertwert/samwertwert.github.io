@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>麻雀計算</title>
     <link rel="stylesheet" href="mjStyle.css">
 </head>
+
 <body>
     <script src="mjTiles.js"></script>
     <script src="mjScript.js"></script>
@@ -19,11 +21,12 @@
         <!-- can add more later -->
     </div>
 
-    <!-- Photo capture / upload -->
-    <div class="camera-section">
-        <button id="captureBtn">📸 拍照</button>
-        <input type="file" id="uploadInput" accept="image/*" style="display:none;">
-        <div id="imagePreview"></div>
+    <!-- Input Tile -->
+    <div class="manual-input-section">
+        <label for="tileInput">手動輸入牌 (例如: m1 m2 m3 p5 p5 z1 z1 ...):</label><br>
+        <textarea id="tileInput" rows="2" cols="40"
+            placeholder="輸入14張牌，用空格分隔，例如：m1 m2 m3 m4 m5 m6 m7 m8 m9 p1 p1 p2 p2 p3"></textarea>
+        <button id="parseBtn">解析牌型</button>
     </div>
 
     <!-- Tiles display and adjustment -->
@@ -80,4 +83,5 @@
     <div id="result"></div>
 
 </body>
+
 </html>

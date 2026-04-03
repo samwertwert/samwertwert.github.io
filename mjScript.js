@@ -566,108 +566,36 @@ if (typeof module !== 'undefined' && module.exports) {
 // =============================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    const captureBtn = document.getElementById('captureBtn');
-    const uploadInput = document.getElementById('uploadInput');
-    const imagePreview = document.getElementById('imagePreview');
     const tilesContainer = document.getElementById('tilesContainer');
+    const parseBtn = document.getElementById('parseBtn');
+    const tileInput = document.getElementById('tileInput');
 
-    // Trigger file input when capture button is clicked
-    captureBtn.addEventListener('click', () => {
-        uploadInput.click();
-    });
-
-    // Handle file selection
-    uploadInput.addEventListener('change', async (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        // Display preview
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            imagePreview.innerHTML = `<img src="${e.target.result}" style="max-width: 100%; max-height: 200px;">`;
-        };
-        reader.readAsDataURL(file);
-
-        // Attempt real recognition
-        try {
-            const groups = await realRecognition(file);
-            renderGroups(groups);
-        } catch (err) {
-            console.error('Recognition failed', err);
-            alert('認識失敗，使用模擬數據');
-            const groups = await simulateRecognition(); // fallback
-            renderGroups(groups);
+    // Parse button: convert text -> tiles -> group -> render
+    parseBtn.addEventListener('click', () => {
+        const rawText = tileInput.value;
+        const tiles = parseTileString(rawText);
+        if (tiles.length !== 14) {
+            alert(`需要14張牌，您輸入了 ${tiles.length} 張。請檢查輸入。`);
+            return;
         }
-    });
-
-    // Mock recognition: returns a fixed hand for testing
-    async function simulateRecognition() {
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // Return a sample hand: 223344m 567p 88s 东东 (pair)
-        // This is a hand with sequences, a triplet, and a pair.
-        return [
-            { tiles: [{ suit: 'm', number: 2 }, { suit: 'm', number: 2 }, { suit: 'm', number: 3 }], type: 'triplet', open: false }, // but this is not a triplet; we'll fix to proper groups
-            // Better to create a valid hand: e.g., 234m 456m 33m 678p 99s? Let's create a simple valid hand:
-            // 123m (sequence), 456m (sequence), 789m (sequence), 11p (pair) – that's a hand
-            { tiles: [{ suit: 'm', number: 1 }, { suit: 'm', number: 2 }, { suit: 'm', number: 3 }], type: 'sequence', open: false },
-            { tiles: [{ suit: 'm', number: 4 }, { suit: 'm', number: 5 }, { suit: 'm', number: 6 }], type: 'sequence', open: false },
-            { tiles: [{ suit: 'm', number: 7 }, { suit: 'm', number: 8 }, { suit: 'm', number: 9 }], type: 'sequence', open: false },
-            { tiles: [{ suit: 'p', number: 1 }, { suit: 'p', number: 1 }], type: 'pair', open: false }
-        ];
-    }
-
-    async function realRecognition(file) {
-        // Load image
-        const img = await createImageFromFile(file);
-        // Ensure image is loaded and dimensions known
-        await new Promise(resolve => { if (img.complete) resolve(); else img.onload = resolve; });
-
-        const boxes = detectTileBoxes(img);
-        if (boxes.length === 0) throw new Error('No tiles detected');
-
-        const tileLabels = [];
-        for (const box of boxes) {
-            const label = await classifyTileRegion(img, box);
-            // label format: e.g., "m1", "p5", "z6" (z=honor: 1-4 winds, 5-7 dragons)
-            const suit = label[0];
-            const number = parseInt(label.slice(1));
-            tileLabels.push({ suit, number });
-        }
-
-        if (tileLabels.length !== 14) {
-            console.warn(`Detected ${tileLabels.length} tiles, expected 14. Using anyway.`);
-        }
-
-        // Group tiles
-        const groups = groupTiles(tileLabels);
+        const groups = groupTiles(tiles);
         if (!groups) {
-            throw new Error('Could not form a valid hand from recognized tiles');
+            alert('無法組成有效的麻將牌型 (順子/刻子/槓子 + 雀頭)');
+            return;
         }
+        renderGroups(groups);
+    });
 
-        return groups;
-    }
-
-    function createImageFromFile(file) {
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => resolve(img);
-            img.onerror = reject;
-            img.src = URL.createObjectURL(file);
-        });
-    }
-
-    // Render groups with adjustment controls
+    // Render groups with working adjustment controls
     function renderGroups(groups) {
         window.currentGroups = groups;
-        tilesContainer.innerHTML = ''; // clear
+        tilesContainer.innerHTML = '';
 
-        // Show raw tile list (text)
+        // Show raw tile list
         const allTiles = groups.flatMap(g => g.tiles);
         const tileText = allTiles.map(t => `${t.suit}${t.number}`).join(' ');
         const rawDiv = document.createElement('div');
-        rawDiv.innerHTML = `<strong>認識牌:</strong> ${tileText}`;
+        rawDiv.innerHTML = `<strong>當前牌型:</strong> ${tileText}`;
         tilesContainer.appendChild(rawDiv);
 
         groups.forEach((group, index) => {
@@ -675,18 +603,14 @@ document.addEventListener('DOMContentLoaded', () => {
             groupDiv.className = 'group-row';
             groupDiv.dataset.index = index;
 
-            // Tile display
             const tileSpan = document.createElement('span');
             tileSpan.className = 'tiles';
             tileSpan.textContent = group.tiles.map(t => `${t.suit}${t.number}`).join(' ');
             groupDiv.appendChild(tileSpan);
 
-            // Status controls
-            const statuses = ['順子', '刻子', '槓子', '雀頭'];
             const currentStatus = group.type === 'sequence' ? '順子' :
-                group.type === 'triplet' ? '刻子' :
-                    group.type === 'kan' ? '槓子' : '雀頭';
-
+                                  group.type === 'triplet' ? '刻子' :
+                                  group.type === 'kan' ? '槓子' : '雀頭';
             const statusSpan = document.createElement('span');
             statusSpan.textContent = currentStatus;
             statusSpan.style.margin = '0 10px';
@@ -694,7 +618,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const prevBtn = document.createElement('button');
             prevBtn.textContent = '←';
             prevBtn.onclick = () => changeGroupStatus(index, -1);
-
             const nextBtn = document.createElement('button');
             nextBtn.textContent = '→';
             nextBtn.onclick = () => changeGroupStatus(index, 1);
@@ -704,67 +627,63 @@ document.addEventListener('DOMContentLoaded', () => {
             controls.appendChild(prevBtn);
             controls.appendChild(statusSpan);
             controls.appendChild(nextBtn);
-
             groupDiv.appendChild(controls);
             tilesContainer.appendChild(groupDiv);
         });
 
-        // Add winning tile selector (choose from all tiles in hand)
         addWinningTileSelector(groups);
     }
 
-    // Change group status (cycle through types)
+    // Cycle group type (順子 ↔ 刻子 ↔ 槓子 ↔ 雀頭)
     function changeGroupStatus(index, direction) {
-        // This would update the group's type and re-render
-        // For simplicity, we'll just log and you can expand later
-        console.log(`Change group ${index} by ${direction}`);
-        // In a real implementation, you'd modify the groups array and re-render.
+        const groups = window.currentGroups;
+        if (!groups) return;
+        const group = groups[index];
+        const typeOrder = ['sequence', 'triplet', 'kan', 'pair'];
+        let currentIdx = typeOrder.indexOf(group.type);
+        if (currentIdx === -1) currentIdx = 0;
+        let newIdx = (currentIdx + direction + typeOrder.length) % typeOrder.length;
+        const newType = typeOrder[newIdx];
+        // For simplicity, we only change the type label; tiles remain the same.
+        // In a real app, you'd need to adjust tile counts for kan (4 tiles) vs pair (2 tiles).
+        // Here we keep the tiles unchanged – user can re-parse if needed.
+        group.type = newType;
+        renderGroups(groups);
     }
 
-    // Add a dropdown to select the winning tile
     function addWinningTileSelector(groups) {
+        // Remove old selector if exists
+        const oldSelector = document.querySelector('.winning-tile-selector');
+        if (oldSelector) oldSelector.remove();
+
         const selectorDiv = document.createElement('div');
         selectorDiv.className = 'winning-tile-selector';
         selectorDiv.innerHTML = '<label>和了牌: <select id="winTileSelect"></select></label>';
-
         const select = selectorDiv.querySelector('select');
-        // Flatten all tiles
         const allTiles = groups.flatMap(g => g.tiles);
-        // Create options (use index as value, or tile representation)
         allTiles.forEach((tile, idx) => {
             const option = document.createElement('option');
-            option.value = idx; // we'll use index to identify tile
+            option.value = idx;
             option.textContent = `${tile.suit}${tile.number}`;
             select.appendChild(option);
         });
-
         tilesContainer.appendChild(selectorDiv);
     }
 
-    // =============================================================================
-    // Calculate button handler
-    // =============================================================================
+    // Calculate button (already exists, but we must ensure it's inside DOMContentLoaded)
     document.getElementById('calculateBtn').addEventListener('click', () => {
-        // Gather groups from the UI (you need to store them in a variable)
-        // For now, we'll assume groups are stored in a global variable `currentGroups`
-        // and the winning tile index is from the dropdown.
         if (!window.currentGroups) {
-            alert('請先拍照或輸入牌組');
+            alert('請先輸入或解析牌型');
             return;
         }
-
         const winTileSelect = document.getElementById('winTileSelect');
         if (!winTileSelect) {
             alert('請選擇和了牌');
             return;
         }
-
         const winTileIndex = parseInt(winTileSelect.value);
-        // Flatten tiles to find the winning tile object
         const allTiles = window.currentGroups.flatMap(g => g.tiles);
         const winTile = allTiles[winTileIndex];
-
-        // Gather other UI parameters
         const params = {
             groups: window.currentGroups,
             winTile: winTile,
@@ -774,27 +693,24 @@ document.addEventListener('DOMContentLoaded', () => {
             playerWind: document.getElementById('playerWind').value,
             riichi: document.getElementById('riichi').checked,
             ippatsu: document.getElementById('ippatsu').checked,
-            chankan: false,  // not implemented yet
+            chankan: false,
             rinshan: false,
             haitei: false,
             houtei: false,
-            doraIndicators: [],  // need to implement dora selection
+            doraIndicators: [],
             uraDoraIndicators: [],
             redFives: parseInt(document.getElementById('akaDora').value) || 0,
             flowers: parseInt(document.getElementById('flowers').value) || 0
         };
-
         const result = calculateScore(params);
-
-        // Display result
         const resultDiv = document.getElementById('result');
         resultDiv.innerHTML = `
-        <h3>結果</h3>
-        <p>翻: ${result.han} 符: ${result.fu} 役滿: ${result.yakuman}</p>
-        <p>役: ${result.yakuList.map(y => y.name).join('、')}</p>
-        <p>${result.limit} 基本點: ${result.basicPoints}</p>
-        <pre>${JSON.stringify(result.payment, null, 2)}</pre>
-    `;
+            <h3>結果</h3>
+            <p>翻: ${result.han} 符: ${result.fu} 役滿: ${result.yakuman}</p>
+            <p>役: ${result.yakuList.map(y => y.name).join('、')}</p>
+            <p>${result.limit} 基本點: ${result.basicPoints}</p>
+            <pre>${JSON.stringify(result.payment, null, 2)}</pre>
+        `;
     });
 });
 
@@ -1015,5 +931,33 @@ function groupTiles(tiles) {
         return a.number - b.number;
     });
     return findGroups(sorted);
+}
+
+function parseTileString(str) {
+    const parts = str.trim().split(/\s+/);
+    const tiles = [];
+    for (const part of parts) {
+        const match = part.match(/^([mpsz])(\d+)$/);
+        if (!match) {
+            console.warn(`Invalid tile format: ${part}`);
+            continue;
+        }
+        const suit = match[1];
+        let number = parseInt(match[2], 10);
+        // Validate number range
+        if (suit === 'z') {
+            if (number < 1 || number > 7) {
+                console.warn(`Honor number out of range (1-7): ${part}`);
+                continue;
+            }
+        } else {
+            if (number < 1 || number > 9) {
+                console.warn(`Number tile out of range (1-9): ${part}`);
+                continue;
+            }
+        }
+        tiles.push({ suit, number });
+    }
+    return tiles;
 }
 

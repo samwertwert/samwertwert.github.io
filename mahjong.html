@@ -21,13 +21,19 @@
         <!-- can add more later -->
     </div>
 
-    <!-- Input Tile -->
-    <div class="manual-input-section">
-        <label for="tileInput">手動輸入牌 (例如: m1 m2 m3 p5 p5 z1 z1 ...):</label><br>
-        <textarea id="tileInput" rows="2" cols="40"
-            placeholder="輸入14張牌，用空格分隔，例如：m1 m2 m3 m4 m5 m6 m7 m8 m9 p1 p1 p2 p2 p3"></textarea>
-        <button id="parseBtn">解析牌型</button>
+    <!-- Tile selection grid: 5 rows x 4 columns = up to 20 tiles, but we'll validate 14-18-->
+    <div class="tile-grid">
+        <h3>手牌 (最少14張，最多18張)</h3>
+        <table id="tileTable">
+            <tbody id="tileGridBody"></tbody>
+        </table>
+        <div class="grid-controls">
+            <button id="resetGridBtn">清空所有</button>
+            <span id="tileCountDisplay">已選: 0 張</span>
+        </div>
+        <button id="confirmHandBtn">確定牌型</button>
     </div>
+
 
     <!-- Tiles display and adjustment -->
     <div id="tilesContainer">
@@ -65,11 +71,17 @@
         <label>紅寶牌:
             <input type="number" id="akaDora" min="0" max="3" value="0">
         </label>
-        <label>寶牌:
-            <!-- we'll need a way to select multiple dora indicators -->
-            <div id="doraIndicators"></div>
-        </label>
-        <label>花:
+        <div class="dora-indicators-list">
+            <label>寶牌指示牌:</label>
+            <div id="doraIndicatorsContainer"></div>
+            <button id="addDoraBtn">+ 新增寶牌指示牌</button>
+        </div>
+        <div class="dora-indicators-list">
+            <label>裏寶牌指示牌 (立直時):</label>
+            <div id="uraDoraIndicatorsContainer"></div>
+            <button id="addUraDoraBtn">+ 新增裏寶牌指示牌</button>
+        </div>
+        <label>花牌:
             <input type="number" id="flowers" min="0" max="4" value="0">
         </label>
     </div>

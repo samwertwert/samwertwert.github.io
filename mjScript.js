@@ -562,13 +562,56 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 
 // =============================================================================
-// Photo Capture & Tile Recognition (Mock)
+//  Tile Recognition (Mock)
 // =============================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
     const tilesContainer = document.getElementById('tilesContainer');
     const parseBtn = document.getElementById('parseBtn');
     const tileInput = document.getElementById('tileInput');
+    const gridBody = document.getElementById('tileGridBody');
+    const tileCountDisplay = document.getElementById('tileCountDisplay');
+    let tileDropdowns = [];
+
+    function buildGrid() {
+        gridBody.innerHTML = '';
+        tileDropdowns = [];
+        for (let row = 0; row < 5; row++) {
+            const tr = document.createElement('tr');
+            for (let col = 0; col < 4; col++) {
+                const td = document.createElement('td');
+                const select = createTileDropdown();
+                select.addEventListener('change', updateTileCount);
+                td.appendChild(select);
+                tr.appendChild(td);
+                tileDropdowns.push(select);
+            }
+            gridBody.appendChild(tr);
+        }
+    }
+
+    function updateTileCount() {
+        const selected = tileDropdowns.filter(sel => sel.value !== '').length;
+        tileCountDisplay.textContent = `已選: ${selected} 張`;
+    }
+
+    buildGrid();
+    document.getElementById('resetGridBtn').addEventListener('click', () => {
+        tileDropdowns.forEach(sel => sel.value = '');
+        updateTileCount();
+    });
+
+    function getTilesFromGrid() {
+        const tiles = [];
+        for (let sel of tileDropdowns) {
+            const val = sel.value;
+            if (val === '') continue;
+            const suit = val[0];
+            const number = parseInt(val.slice(1));
+            tiles.push({ suit, number });
+        }
+        return tiles;
+    }
 
     // Parse button: convert text -> tiles -> group -> render
     parseBtn.addEventListener('click', () => {
@@ -609,8 +652,8 @@ document.addEventListener('DOMContentLoaded', () => {
             groupDiv.appendChild(tileSpan);
 
             const currentStatus = group.type === 'sequence' ? '順子' :
-                                  group.type === 'triplet' ? '刻子' :
-                                  group.type === 'kan' ? '槓子' : '雀頭';
+                group.type === 'triplet' ? '刻子' :
+                    group.type === 'kan' ? '槓子' : '雀頭';
             const statusSpan = document.createElement('span');
             statusSpan.textContent = currentStatus;
             statusSpan.style.margin = '0 10px';
@@ -933,6 +976,30 @@ function groupTiles(tiles) {
     return findGroups(sorted);
 }
 
+document.getElementById('confirmHandBtn').addEventListener('click', () => {
+    const tiles = getTilesFromGrid();
+    if (tiles.length < 14) {
+        alert(`牌數不足14張 (目前${tiles.length}張)`);
+        return;
+    }
+    if (tiles.length > 18) {
+        alert(`牌數超過18張 (目前${tiles.length}張)`);
+        return;
+    }
+    // Group only the first 14 tiles? Actually the hand must be exactly 14 for a valid win.
+    // We'll ask user to select exactly 14 tiles. We'll allow 14 only.
+    if (tiles.length !== 14) {
+        alert('請選擇恰好14張牌 (現在是 ' + tiles.length + ' 張)');
+        return;
+    }
+    const groups = groupTiles(tiles);
+    if (!groups) {
+        alert('無法組成有效的麻將牌型 (順子/刻子/槓子 + 雀頭)');
+        return;
+    }
+    renderGroups(groups);
+});
+
 function parseTileString(str) {
     const parts = str.trim().split(/\s+/);
     const tiles = [];
@@ -961,3 +1028,75 @@ function parseTileString(str) {
     return tiles;
 }
 
+// Generate dropdown for a tile cell (returns select element)
+function createTileDropdown() {
+    const select = document.createElement('select');
+    select.add(new Option('(空白)', ''));
+    // Manzu (萬)
+    const manzuGroup = document.createElement('optgroup');
+    manzuGroup.label = '萬子';
+    for (let i = 1; i <= 9; i++) manzuGroup.add(new Option(`${i}萬`, `m${i}`));
+    select.appendChild(manzuGroup);
+    // Pinzu (筒)
+    const pinzuGroup = document.createElement('optgroup');
+    pinzuGroup.label = '筒子';
+    for (let i = 1; i <= 9; i++) pinzuGroup.add(new Option(`${i}筒`, `p${i}`));
+    select.appendChild(pinzuGroup);
+    // Souzu (索)
+    const souzuGroup = document.createElement('optgroup');
+    souzuGroup.label = '索子';
+    for (let i = 1; i <= 9; i++) souzuGroup.add(new Option(`${i}索`, `s${i}`));
+    select.appendChild(souzuGroup);
+    // Honors (字牌)
+    const honorGroup = document.createElement('optgroup');
+    honorGroup.label = '字牌';
+    const honors = ['東', '南', '西', '北', '白', '發', '中'];
+    const honorCodes = ['z1', 'z2', 'z3', 'z4', 'z5', 'z6', 'z7'];
+    for (let i = 0; i < honors.length; i++) {
+        honorGroup.add(new Option(honors[i], honorCodes[i]));
+    }
+    select.appendChild(honorGroup);
+    return select;
+}
+
+function createDoraDropdown() {
+    const select = createTileDropdown(); // reuse same creator
+    select.classList.add('dora-select');
+    return select;
+}
+
+const doraContainer = document.getElementById('doraIndicatorsContainer');
+const uraDoraContainer = document.getElementById('uraDoraIndicatorsContainer');
+
+function addDoraIndicator(container) {
+    const div = document.createElement('div');
+    div.className = 'dora-indicator-item';
+    const select = createDoraDropdown();
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = '✖';
+    removeBtn.onclick = () => div.remove();
+    div.appendChild(select);
+    div.appendChild(removeBtn);
+    container.appendChild(div);
+}
+
+document.getElementById('addDoraBtn').addEventListener('click', () => addDoraIndicator(doraContainer));
+document.getElementById('addUraDoraBtn').addEventListener('click', () => addDoraIndicator(uraDoraContainer));
+
+
+function collectDoraIndicators(container) {
+    const selects = container.querySelectorAll('.dora-select');
+    const indicators = [];
+    selects.forEach(sel => {
+        if (sel.value) {
+            const suit = sel.value[0];
+            const number = parseInt(sel.value.slice(1));
+            indicators.push({ suit, number });
+        }
+    });
+    return indicators;
+}
+
+// In calculate button handler:
+const doraIndicators = collectDoraIndicators(doraContainer);
+const uraDoraIndicators = collectDoraIndicators(uraDoraContainer);

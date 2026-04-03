@@ -567,7 +567,6 @@ if (typeof module !== 'undefined' && module.exports) {
 
 document.addEventListener('DOMContentLoaded', () => {
     const tilesContainer = document.getElementById('tilesContainer');
-    const parseBtn = document.getElementById('parseBtn');
     const tileInput = document.getElementById('tileInput');
     const gridBody = document.getElementById('tileGridBody');
     const tileCountDisplay = document.getElementById('tileCountDisplay');
@@ -589,6 +588,29 @@ document.addEventListener('DOMContentLoaded', () => {
             gridBody.appendChild(tr);
         }
     }
+    document.getElementById('confirmHandBtn').addEventListener('click', () => {
+        const tiles = getTilesFromGrid();
+        if (tiles.length < 14) {
+            alert(`牌數不足14張 (目前${tiles.length}張)`);
+            return;
+        }
+        if (tiles.length > 18) {
+            alert(`牌數超過18張 (目前${tiles.length}張)`);
+            return;
+        }
+        // Group only the first 14 tiles? Actually the hand must be exactly 14 for a valid win.
+        // We'll ask user to select exactly 14 tiles. We'll allow 14 only.
+        if (tiles.length !== 14) {
+            alert('請選擇恰好14張牌 (現在是 ' + tiles.length + ' 張)');
+            return;
+        }
+        const groups = groupTiles(tiles);
+        if (!groups) {
+            alert('無法組成有效的麻將牌型 (順子/刻子/槓子 + 雀頭)');
+            return;
+        }
+        renderGroups(groups);
+    });
 
     function updateTileCount() {
         const selected = tileDropdowns.filter(sel => sel.value !== '').length;
@@ -740,8 +762,8 @@ document.addEventListener('DOMContentLoaded', () => {
             rinshan: false,
             haitei: false,
             houtei: false,
-            doraIndicators: [],
-            uraDoraIndicators: [],
+            doraIndicators: collectDoraIndicators(doraContainer),
+            uraDoraIndicators: collectDoraIndicators(uraDoraContainer),
             redFives: parseInt(document.getElementById('akaDora').value) || 0,
             flowers: parseInt(document.getElementById('flowers').value) || 0
         };
@@ -761,118 +783,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Store groups globally after recognition
 window.currentGroups = null;
-
-// =============================================================================
-// Hugging Face Model Loading
-// =============================================================================
-
-let classifier = null;
-
-async function loadModel() {
-    if (classifier) return classifier;
-    const { pipeline } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers');
-    // The model is a ViT fine‑tuned on mahjong tiles
-    classifier = await pipeline('image-classification', 'pjura/mahjong_vision');
-    console.log('Mahjong vision model loaded');
-    return classifier;
-}
-
-// Load on page load (optional, but good to start early)
-window.addEventListener('DOMContentLoaded', () => {
-    loadModel().catch(console.error);
-});
-
-// =============================================================================
-// Tile Detection (Contour-based)
-// =============================================================================
-function detectTileBoxes(imageElement) {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = imageElement.width;
-    canvas.height = imageElement.height;
-    ctx.drawImage(imageElement, 0, 0, canvas.width, canvas.height);
-
-    // Convert to grayscale
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
-    const gray = new Uint8ClampedArray(canvas.width * canvas.height);
-    for (let i = 0; i < data.length; i += 4) {
-        // luminance
-        gray[i / 4] = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-    }
-
-    // Simple threshold (adjust if needed)
-    const threshold = 120; // tiles are usually darker than background
-    const binary = new Uint8Array(gray.length);
-    for (let i = 0; i < gray.length; i++) {
-        binary[i] = gray[i] < threshold ? 0 : 255; // 0 = tile (dark)
-    }
-
-    // Flood fill to find connected components
-    const visited = new Uint8Array(binary.length);
-    const boxes = [];
-
-    for (let y = 0; y < canvas.height; y++) {
-        for (let x = 0; x < canvas.width; x++) {
-            const idx = y * canvas.width + x;
-            if (binary[idx] === 0 && !visited[idx]) {
-                // Start new component
-                const stack = [[x, y]];
-                visited[idx] = 1;
-                let minX = x, maxX = x, minY = y, maxY = y;
-
-                while (stack.length) {
-                    const [cx, cy] = stack.pop();
-                    minX = Math.min(minX, cx);
-                    maxX = Math.max(maxX, cx);
-                    minY = Math.min(minY, cy);
-                    maxY = Math.max(maxY, cy);
-
-                    // Check 4 neighbors
-                    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-                        const nx = cx + dx;
-                        const ny = cy + dy;
-                        if (nx >= 0 && nx < canvas.width && ny >= 0 && ny < canvas.height) {
-                            const nidx = ny * canvas.width + nx;
-                            if (binary[nidx] === 0 && !visited[nidx]) {
-                                visited[nidx] = 1;
-                                stack.push([nx, ny]);
-                            }
-                        }
-                    }
-                }
-
-                const width = maxX - minX + 1;
-                const height = maxY - minY + 1;
-                // Ignore tiny noise (adjust based on image size)
-                if (width > 20 && height > 20) {
-                    boxes.push({ x: minX, y: minY, width, height });
-                }
-            }
-        }
-    }
-
-    // Sort left-to-right (common layout)
-    boxes.sort((a, b) => a.x - b.x);
-    return boxes;
-}
-
-async function classifyTileRegion(imageElement, box) {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = 224;
-    canvas.height = 224;
-    ctx.drawImage(imageElement, box.x, box.y, box.width, box.height, 0, 0, 224, 224);
-
-    // Convert canvas to blob (image/jpeg)
-    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
-
-    const model = await loadModel(); // ensure loaded
-    const results = await model(blob);
-    // results is array like [{ label: 'm1', score: 0.99 }, ...]
-    // label format: suit + number, e.g., 'm1', 'p5', 'z6' (z for honors)
-    return results[0].label;
-}
 
 // =============================================================================
 // Mahjong Hand Grouping
@@ -976,29 +886,7 @@ function groupTiles(tiles) {
     return findGroups(sorted);
 }
 
-document.getElementById('confirmHandBtn').addEventListener('click', () => {
-    const tiles = getTilesFromGrid();
-    if (tiles.length < 14) {
-        alert(`牌數不足14張 (目前${tiles.length}張)`);
-        return;
-    }
-    if (tiles.length > 18) {
-        alert(`牌數超過18張 (目前${tiles.length}張)`);
-        return;
-    }
-    // Group only the first 14 tiles? Actually the hand must be exactly 14 for a valid win.
-    // We'll ask user to select exactly 14 tiles. We'll allow 14 only.
-    if (tiles.length !== 14) {
-        alert('請選擇恰好14張牌 (現在是 ' + tiles.length + ' 張)');
-        return;
-    }
-    const groups = groupTiles(tiles);
-    if (!groups) {
-        alert('無法組成有效的麻將牌型 (順子/刻子/槓子 + 雀頭)');
-        return;
-    }
-    renderGroups(groups);
-});
+
 
 function parseTileString(str) {
     const parts = str.trim().split(/\s+/);
@@ -1097,6 +985,3 @@ function collectDoraIndicators(container) {
     return indicators;
 }
 
-// In calculate button handler:
-const doraIndicators = collectDoraIndicators(doraContainer);
-const uraDoraIndicators = collectDoraIndicators(uraDoraContainer);

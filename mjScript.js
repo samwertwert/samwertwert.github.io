@@ -572,38 +572,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const tileCountDisplay = document.getElementById('tileCountDisplay');
     let tileDropdowns = [];
 
-
-// Generate dropdown for a tile cell (returns select element)
-function createTileDropdown() {
-    const select = document.createElement('select');
-    select.add(new Option('(空白)', ''));
-    // Manzu (萬)
-    const manzuGroup = document.createElement('optgroup');
-    manzuGroup.label = '萬子';
-    for (let i = 1; i <= 9; i++) manzuGroup.add(new Option(`${i}萬`, `m${i}`));
-    select.appendChild(manzuGroup);
-    // Pinzu (筒)
-    const pinzuGroup = document.createElement('optgroup');
-    pinzuGroup.label = '筒子';
-    for (let i = 1; i <= 9; i++) pinzuGroup.add(new Option(`${i}筒`, `p${i}`));
-    select.appendChild(pinzuGroup);
-    // Souzu (索)
-    const souzuGroup = document.createElement('optgroup');
-    souzuGroup.label = '索子';
-    for (let i = 1; i <= 9; i++) souzuGroup.add(new Option(`${i}索`, `s${i}`));
-    select.appendChild(souzuGroup);
-    // Honors (字牌)
-    const honorGroup = document.createElement('optgroup');
-    honorGroup.label = '字牌';
-    const honors = ['東', '南', '西', '北', '白', '發', '中'];
-    const honorCodes = ['z1', 'z2', 'z3', 'z4', 'z5', 'z6', 'z7'];
-    for (let i = 0; i < honors.length; i++) {
-        honorGroup.add(new Option(honors[i], honorCodes[i]));
-    }
-    select.appendChild(honorGroup);
-    return select;
-}
-
     function buildGrid() {
         gridBody.innerHTML = '';
         tileDropdowns = [];
@@ -987,3 +955,33 @@ function parseTileString(str) {
     return tiles;
 }
 
+// Generate dropdown for a tile cell (returns select element)
+function createTileDropdown() {
+    const select = document.createElement('select');
+    select.add(new Option('(空白)', ''));
+    // Manzu (萬)
+    const manzuGroup = document.createElement('optgroup');
+    manzuGroup.label = '萬子';
+    for (let i = 1; i <= 9; i++) manzuGroup.appendChild(new Option(`${i}萬`, `m${i}`));
+    select.appendChild(manzuGroup);
+    // Pinzu (筒)
+    const pinzuGroup = document.createElement('optgroup');
+    pinzuGroup.label = '筒子';
+    for (let i = 1; i <= 9; i++) pinzuGroup.appendChild(new Option(`${i}筒`, `p${i}`));
+    select.appendChild(pinzuGroup);
+    // Souzu (索)
+    const souzuGroup = document.createElement('optgroup');
+    souzuGroup.label = '索子';
+    for (let i = 1; i <= 9; i++) souzuGroup.appendChild(new Option(`${i}索`, `s${i}`));
+    select.appendChild(souzuGroup);
+    // Honors (字牌)
+    const honorGroup = document.createElement('optgroup');
+    honorGroup.label = '字牌';
+    const honors = ['東', '南', '西', '北', '白', '發', '中'];
+    const honorCodes = ['z1', 'z2', 'z3', 'z4', 'z5', 'z6', 'z7'];
+    for (let i = 0; i < honors.length; i++) {
+        honorGroup.appendChild(new Option(honors[i], honorCodes[i]));
+    }
+    select.appendChild(honorGroup);
+    return select;
+}

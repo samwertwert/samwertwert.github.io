@@ -612,6 +612,47 @@ document.addEventListener('DOMContentLoaded', () => {
         renderGroups(groups);
     });
 
+    function createDoraDropdown() {
+        const select = createTileDropdown(); // reuse same creator
+        select.classList.add('dora-select');
+        return select;
+    }
+
+
+    const doraContainer = document.getElementById('doraIndicatorsContainer');
+    const uraDoraContainer = document.getElementById('uraDoraIndicatorsContainer');
+
+    function addDoraIndicator(container) {
+        const div = document.createElement('div');
+        div.className = 'dora-indicator-item';
+        const select = createDoraDropdown();
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = '✖';
+        removeBtn.onclick = () => div.remove();
+        div.appendChild(select);
+        div.appendChild(removeBtn);
+        container.appendChild(div);
+    }
+
+    document.getElementById('addDoraBtn').addEventListener('click', () => addDoraIndicator(doraContainer));
+    document.getElementById('addUraDoraBtn').addEventListener('click', () => addDoraIndicator(uraDoraContainer));
+
+    function collectDoraIndicators(container) {
+        const selects = container.querySelectorAll('.dora-select');
+        const indicators = [];
+        selects.forEach(sel => {
+            if (sel.value) {
+                const suit = sel.value[0];
+                const number = parseInt(sel.value.slice(1));
+                indicators.push({ suit, number });
+            }
+        });
+        return indicators;
+    }
+
+    const doraIndicators = collectDoraIndicators(doraContainer);
+    const uraDoraIndicators = collectDoraIndicators(uraDoraContainer);
+
     function updateTileCount() {
         const selected = tileDropdowns.filter(sel => sel.value !== '').length;
         tileCountDisplay.textContent = `已選: ${selected} 張`;
@@ -762,8 +803,8 @@ document.addEventListener('DOMContentLoaded', () => {
             rinshan: false,
             haitei: false,
             houtei: false,
-            doraIndicators: collectDoraIndicators(doraContainer),
-            uraDoraIndicators: collectDoraIndicators(uraDoraContainer),
+            doraIndicators: doraIndicators,
+            uraDoraIndicators: uraDoraIndicators,
             redFives: parseInt(document.getElementById('akaDora').value) || 0,
             flowers: parseInt(document.getElementById('flowers').value) || 0
         };
@@ -886,8 +927,6 @@ function groupTiles(tiles) {
     return findGroups(sorted);
 }
 
-
-
 function parseTileString(str) {
     const parts = str.trim().split(/\s+/);
     const tiles = [];
@@ -946,42 +985,3 @@ function createTileDropdown() {
     select.appendChild(honorGroup);
     return select;
 }
-
-function createDoraDropdown() {
-    const select = createTileDropdown(); // reuse same creator
-    select.classList.add('dora-select');
-    return select;
-}
-
-const doraContainer = document.getElementById('doraIndicatorsContainer');
-const uraDoraContainer = document.getElementById('uraDoraIndicatorsContainer');
-
-function addDoraIndicator(container) {
-    const div = document.createElement('div');
-    div.className = 'dora-indicator-item';
-    const select = createDoraDropdown();
-    const removeBtn = document.createElement('button');
-    removeBtn.textContent = '✖';
-    removeBtn.onclick = () => div.remove();
-    div.appendChild(select);
-    div.appendChild(removeBtn);
-    container.appendChild(div);
-}
-
-document.getElementById('addDoraBtn').addEventListener('click', () => addDoraIndicator(doraContainer));
-document.getElementById('addUraDoraBtn').addEventListener('click', () => addDoraIndicator(uraDoraContainer));
-
-
-function collectDoraIndicators(container) {
-    const selects = container.querySelectorAll('.dora-select');
-    const indicators = [];
-    selects.forEach(sel => {
-        if (sel.value) {
-            const suit = sel.value[0];
-            const number = parseInt(sel.value.slice(1));
-            indicators.push({ suit, number });
-        }
-    });
-    return indicators;
-}
-

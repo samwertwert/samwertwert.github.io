@@ -676,22 +676,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return tiles;
     }
 
-    // Parse button: convert text -> tiles -> group -> render
-    parseBtn.addEventListener('click', () => {
-        const rawText = tileInput.value;
-        const tiles = parseTileString(rawText);
-        if (tiles.length !== 14) {
-            alert(`需要14張牌，您輸入了 ${tiles.length} 張。請檢查輸入。`);
-            return;
-        }
-        const groups = groupTiles(tiles);
-        if (!groups) {
-            alert('無法組成有效的麻將牌型 (順子/刻子/槓子 + 雀頭)');
-            return;
-        }
-        renderGroups(groups);
-    });
-
     // Render groups with working adjustment controls
     function renderGroups(groups) {
         window.currentGroups = groups;

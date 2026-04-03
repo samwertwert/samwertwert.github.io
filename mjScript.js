@@ -574,8 +574,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function buildGrid() {
         gridBody.innerHTML = '';
-        tileDropdowns = [];
-        for (let row = 0; row < 5; row++) {
+        window.mainDropdowns = [];   // first 4 rows (16 dropdowns)
+        window.pairDropdowns = [];   // last row (2 dropdowns)
+
+        // First 4 rows: 4 dropdowns each
+        for (let row = 0; row < 4; row++) {
             const tr = document.createElement('tr');
             for (let col = 0; col < 4; col++) {
                 const td = document.createElement('td');
@@ -583,32 +586,79 @@ document.addEventListener('DOMContentLoaded', () => {
                 select.addEventListener('change', updateTileCount);
                 td.appendChild(select);
                 tr.appendChild(td);
-                tileDropdowns.push(select);
+                window.mainDropdowns.push(select);
             }
             gridBody.appendChild(tr);
         }
+        // Fifth row: 2 dropdowns (pair)
+        const lastRow = document.createElement('tr');
+        for (let col = 0; col < 2; col++) {
+            const td = document.createElement('td');
+            const select = createTileDropdown();
+            select.addEventListener('change', updateTileCount);
+            td.appendChild(select);
+            lastRow.appendChild(td);
+            window.pairDropdowns.push(select);
+        }
+        // // Fill remaining columns with empty cells to keep 4‑column layout
+        // for (let col = 2; col < 4; col++) {
+        //     const td = document.createElement('td');
+        //     td.innerHTML = '&nbsp;';
+        //     lastRow.appendChild(td);
+        // }
+        gridBody.appendChild(lastRow);
     }
     document.getElementById('confirmHandBtn').addEventListener('click', () => {
-        const tiles = getTilesFromGrid();
-        if (tiles.length < 14) {
-            alert(`牌數不足14張 (目前${tiles.length}張)`);
+        const mainTiles = [];
+        for (let sel of window.mainDropdowns) {
+            if (sel.value !== '') {
+                const suit = sel.value[0];
+                const number = parseInt(sel.value.slice(1));
+                mainTiles.push({ suit, number });
+            }
+        }
+
+        // Collect pair tiles (last row) – must be exactly 2 tiles
+        const pairTiles = [];
+        for (let sel of window.pairDropdowns) {
+            if (sel.value !== '') {
+                const suit = sel.value[0];
+                const number = parseInt(sel.value.slice(1));
+                pairTiles.push({ suit, number });
+            } else {
+                pairTiles.push(null); // placeholder for empty
+            }
+        }
+
+        // Validate pair: exactly 2 non‑empty and identical
+        if (pairTiles.length !== 2 || pairTiles[0] === null || pairTiles[1] === null) {
+            alert('雀頭 (最後一行) 必須恰好選擇2張牌');
             return;
         }
-        if (tiles.length > 18) {
-            alert(`牌數超過18張 (目前${tiles.length}張)`);
+        if (!tileEqual(pairTiles[0], pairTiles[1])) {
+            alert('雀頭 (最後一行) 的兩張牌必須相同');
             return;
         }
-        // Group only the first 14 tiles? Actually the hand must be exactly 14 for a valid win.
-        // We'll ask user to select exactly 14 tiles. We'll allow 14 only.
-        if (tiles.length !== 14) {
-            alert('請選擇恰好14張牌 (現在是 ' + tiles.length + ' 張)');
+
+        const totalTiles = mainTiles.length + 2;
+        if (totalTiles < 14) {
+            alert(`總牌數不足14張 (目前${totalTiles}張)`);
             return;
         }
-        const groups = groupTiles(tiles);
+        if (totalTiles > 18) {
+            alert(`總牌數超過18張 (目前${totalTiles}張)`);
+            return;
+        }
+
+        // Group the main tiles (12‑16 tiles) into sequences/triplets/kans
+        const groups = groupTilesExtended(mainTiles);
         if (!groups) {
-            alert('無法組成有效的麻將牌型 (順子/刻子/槓子 + 雀頭)');
+            alert('無法將主牌組成有效的順子、刻子或槓子');
             return;
         }
+
+        // Add the pair group
+        groups.push({ type: 'pair', tiles: [pairTiles[0], pairTiles[1]], open: false });
         renderGroups(groups);
     });
 
@@ -654,7 +704,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const uraDoraIndicators = collectDoraIndicators(uraDoraContainer);
 
     function updateTileCount() {
-        const selected = tileDropdowns.filter(sel => sel.value !== '').length;
+        const allDropdowns = window.mainDropdowns.concat(window.pairDropdowns);
+        const selected = allDropdowns.filter(sel => sel.value !== '').length;
         tileCountDisplay.textContent = `已選: ${selected} 張`;
     }
 
@@ -968,4 +1019,78 @@ function createTileDropdown() {
     }
     select.appendChild(honorGroup);
     return select;
+}
+
+/**
+ * Extended grouping for main tiles (12‑16 tiles).
+ * Allows groups of size 3 (sequence/triplet) or 4 (kan).
+ */
+function groupTilesExtended(tiles) {
+    if (tiles.length < 12 || tiles.length > 16) {
+        console.warn(`Expected 12‑16 main tiles, got ${tiles.length}`);
+        return null;
+    }
+    const sorted = [...tiles].sort((a, b) => {
+        if (a.suit !== b.suit) return a.suit.localeCompare(b.suit);
+        return a.number - b.number;
+    });
+    return findGroupsExtended(sorted);
+}
+
+function findGroupsExtended(tiles, currentGroups = []) {
+    if (tiles.length === 0) {
+        return currentGroups;
+    }
+    if (tiles.length < 2) return null;
+
+    const countMap = new Map();
+    tiles.forEach(t => {
+        const key = `${t.suit}${t.number}`;
+        countMap.set(key, (countMap.get(key) || 0) + 1);
+    });
+
+    // 1. Try to form a kan (4 identical)
+    for (let i = 0; i < tiles.length; i++) {
+        if (i > 0 && tileEqual(tiles[i], tiles[i-1])) continue;
+        const key = `${tiles[i].suit}${tiles[i].number}`;
+        if (countMap.get(key) >= 4) {
+            const kanTiles = tiles.filter(t => tileEqual(t, tiles[i])).slice(0, 4);
+            const newTiles = tiles.filter(t => !kanTiles.includes(t));
+            const groups = [...currentGroups, { type: 'kan', tiles: kanTiles, open: false, kanType: 'concealed' }];
+            const result = findGroupsExtended(newTiles, groups);
+            if (result) return result;
+        }
+    }
+
+    // 2. Try to form a triplet (3 identical)
+    for (let i = 0; i < tiles.length; i++) {
+        if (i > 0 && tileEqual(tiles[i], tiles[i-1])) continue;
+        const key = `${tiles[i].suit}${tiles[i].number}`;
+        if (countMap.get(key) >= 3) {
+            const triplet = tiles.filter(t => tileEqual(t, tiles[i])).slice(0, 3);
+            const newTiles = tiles.filter(t => !triplet.includes(t));
+            const groups = [...currentGroups, { type: 'triplet', tiles: triplet, open: false }];
+            const result = findGroupsExtended(newTiles, groups);
+            if (result) return result;
+        }
+    }
+
+    // 3. Try to form a sequence (3 consecutive)
+    for (let i = 0; i < tiles.length; i++) {
+        const t1 = tiles[i];
+        if (t1.suit === 'z') continue; // honors cannot form sequences
+        const t2Candidates = tiles.filter(t => t.suit === t1.suit && t.number === t1.number + 1);
+        const t3Candidates = tiles.filter(t => t.suit === t1.suit && t.number === t1.number + 2);
+        if (t2Candidates.length > 0 && t3Candidates.length > 0) {
+            const t2 = t2Candidates[0];
+            const t3 = t3Candidates[0];
+            const newTiles = tiles.filter(t => t !== t1 && t !== t2 && t !== t3);
+            const sequence = [t1, t2, t3];
+            const groups = [...currentGroups, { type: 'sequence', tiles: sequence, open: false }];
+            const result = findGroupsExtended(newTiles, groups);
+            if (result) return result;
+        }
+    }
+
+    return null;
 }
